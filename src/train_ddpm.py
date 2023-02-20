@@ -10,15 +10,16 @@ from utils import get_data, save_images
 
 def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size, epochs, lr, save_path, device):
     data_loader, _ = get_data(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size)
-    model = UNet()
+    model = UNet(device=device).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
-    diffusion = Diffusion()
+    diffusion = Diffusion(img_size=img_size, device=device)
     
     for epoch in range(epochs):
         print(f'==== EPOCH {epoch} ====')
         for i, images in enumerate(tqdm(data_loader)):
-            time_steps = diffusion.sample_time_steps(images.shape[0])
+            images = images.to(device)
+            time_steps = diffusion.sample_time_steps(images.shape[0]).to(device)
             x_t, noise = diffusion.noise_images(images, time_steps)
             predicted_noise = model(x_t, time_steps)
             loss = criterion(predicted_noise, noise)
@@ -36,15 +37,17 @@ def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_fol
 
 
 if __name__ == '__main__':
-    img_size = 64
+    os.makedirs('./results/images', exist_ok=True)
+    os.makedirs('./results/models', exist_ok=True)
+    img_size = 32
     batch_size = 4
-    num_workers = 4
+    num_workers = 1
     dataset_path = 'datasets/celeba'
     train_folder = 'train'
     val_folder = 'val'
-    slice_size = 1000
-    epochs = 1
+    slice_size = 10
+    epochs = 100
     lr = 1e-4
     save_path = 'results'
-    device = 'cpu'
+    device = 'cuda'
     train(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size, epochs, lr, save_path, device)

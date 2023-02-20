@@ -3,8 +3,6 @@ import torch
 import numpy as np
 
 
-
-
 class Block(nn.Module):
 
     def __init__(self, c_in, c_out, c_mid=None, residual=False):
@@ -102,8 +100,9 @@ class SelfAttention(nn.Module):
 
 class UNet(nn.Module):
 
-    def __init__(self, c_in=3, c_out=3, emb_dim=256):
+    def __init__(self, c_in=3, c_out=3, emb_dim=256, device='cuda'):
         super().__init__()
+        self.device = device
         self.emb_dim = emb_dim
         self.input = Block(c_in, 64)
         self.down1 = DownBlock(64, 128)
@@ -128,7 +127,7 @@ class UNet(nn.Module):
     def pos_encoding(self, emb, channels):
         inv_freq = 1.0 / (
             10000
-            ** (torch.arange(0, channels, 2).float() / channels)
+            ** (torch.arange(0, channels, 2, device=self.device).float() / channels)
         )
         pos_enc_a = torch.sin(emb.repeat(1, channels // 2) * inv_freq)
         pos_enc_b = torch.cos(emb.repeat(1, channels // 2) * inv_freq)
