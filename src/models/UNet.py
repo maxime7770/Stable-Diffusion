@@ -7,24 +7,23 @@ import numpy as np
 
 class Block(nn.Module):
 
-    def __init__(self, c_in, c_out, c_mid, residual=False):
+    def __init__(self, c_in, c_out, c_mid=None, residual=False):
         super().__init__()
         self.residual  = residual
         if not c_mid:
             c_mid = c_out
-        self.double_conv = nn.Sequential([
+        self.double_conv = nn.Sequential(
             nn.Conv2d(c_in, c_mid, kernel_size=3, padding=1, bias=False),
             nn.GroupNorm(1, c_mid),
             nn.ReLU(),
             nn.Conv2d(c_mid, c_out, kernel_size=3, padding=1, bias=False),
             nn.GroupNorm(1, c_out),
-        ])
+        )
 
 
     def forward(self, x):
         if self.residual:
-            x = nn.ReLu()(x + self.double_conv(x))
-            return x
+            return nn.ReLU()(x + self.double_conv(x))
         else:
             return self.double_conv(x)
 
@@ -34,16 +33,16 @@ class DownBlock(nn.Module):
 
     def __init__(self, c_in, c_out, emb_dim=256):
         super().__init__()
-        self.maxpool_conv = nn.Sequential([
+        self.maxpool_conv = nn.Sequential(
             nn.MaxPool2d(2),
-            Block(c_in, c_out, residual=True),
+            Block(c_in, c_in, residual=True),
             Block(c_in, c_out),
-        ])
+        )
 
-        self.emb_layer = nn.Sequential([
+        self.emb_layer = nn.Sequential(
             nn.SiLU(),
             nn.Linear(emb_dim, c_out)
-        ])
+        )
 
     def forward(self, x, emb):
         x = self.maxpool_conv(x)
@@ -57,15 +56,15 @@ class UpBlock(nn.Module):
     def __init__(self, c_in, c_out, emb_dim=256):
         super().__init__()
         self.up_sample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.conv = nn.Sequential([
-            Block(c_in, c_out, residual=True),
+        self.conv = nn.Sequential(
+            Block(c_in, c_in, residual=True),
             Block(c_in, c_out, c_in//2)
-        ])
+        )
 
-        self.emb_layer = nn.Sequential([
+        self.emb_layer = nn.Sequential(
             nn.SiLU(),
             nn.Linear(emb_dim, c_out)
-        ])
+        )
 
     def forward(self, x, skip_x, emb):
         x = self.up_sample(x)
@@ -111,16 +110,19 @@ class UNet(nn.Module):
         self.self_attn1 = SelfAttention(128)
         self.down2 = DownBlock(128, 256)
         self.self_attn2 = SelfAttention(256)
-        self.down3 = DownBlock(256, 256)
-        self.self_attn3 = SelfAttention(256)
-        self.bot1 = Block(256, 512)
-        self.bot2 = Block(512, 512)
-        self.up1 = UpBlock(512, 256)
-        self.self_attn4 = SelfAttention(256)
-        self.up2 = UpBlock(256, 128)
-        self.self_attn5 = SelfAttention(128)
-        self.up3 = UpBlock(128, 64)
-        self.self_attn6 = SelfAttention(64)
+        self.down3 = DownBlock(256, 512)
+        self.self_attn3 = SelfAttention(512)
+        # add //2 if bilinear upsampling
+        self.down4 = DownBlock(512, 1024//2)
+        self.self_attn4 = SelfAttention(1024//2)
+        self.up1 = UpBlock(1024, 512//2)
+        self.self_attn5 = SelfAttention(512//2)
+        self.up2 = UpBlock(512, 256//2)
+        self.self_attn6 = SelfAttention(256//2)
+        self.up3 = UpBlock(256, 128//2)
+        self.self_attn7 = SelfAttention(128//2)
+        self.up4 = UpBlock(128, 64)
+        self.self_attn8 = SelfAttention(64)
         self.output = nn.Conv2d(64, c_out, kernel_size=1)
 
     def pos_encoding(self, emb, channels):
@@ -145,16 +147,17 @@ class UNet(nn.Module):
         x3 = self.self_attn2(x3)
         x4 = self.down3(x3, emb)
         x4 = self.self_attn3(x4)
+        x5 = self.down4(x4, emb)
+        x5 = self.self_attn4(x5)
 
-        x4 = self.bot1(x4)
-        x4 = self.bot2(x4)
-
-        x = self.up1(x4, x3, emb)
-        x = self.self_attn4(x)
-        x = self.up2(x, x2, emb)
+        x = self.up1(x5, x4, emb)
         x = self.self_attn5(x)
-        x = self.up3(x, x1, emb)
+        x = self.up2(x, x3, emb)
         x = self.self_attn6(x)
+        x = self.up3(x, x2, emb)
+        x = self.self_attn7(x)
+        x = self.up4(x, x1, emb)
+        x = self.self_attn8(x)
         x = self.output(x)
 
         return x
