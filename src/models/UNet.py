@@ -163,7 +163,7 @@ class UNet(nn.Module):
 
 
 
-class UNet_small:
+class UNet_small(nn.Module):
 
     def __init__(self, c_in=3, c_out=3, emb_dim=128, device='cuda'):
         super().__init__()
