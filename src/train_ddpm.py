@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-from models.UNet import UNet
+from models.UNet import UNet, UNet_small
 from models.DDPM import Diffusion
 from utils import get_data, save_images
 
@@ -10,7 +10,7 @@ from utils import get_data, save_images
 
 def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size, epochs, lr, save_path, device):
     data_loader, _ = get_data(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size)
-    model = UNet(device=device).to(device)
+    model = UNet_small(device=device).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
     diffusion = Diffusion(img_size=img_size, device=device)
@@ -40,9 +40,9 @@ def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_fol
 if __name__ == '__main__':
     os.makedirs('./results/images', exist_ok=True)
     os.makedirs('./results/models', exist_ok=True)
-    img_size = 32
+    img_size = 48
     batch_size = 8
-    num_workers = 1
+    num_workers = 2
     dataset_path = 'datasets/landscape'
     train_folder = 'train'
     val_folder = 'val'
