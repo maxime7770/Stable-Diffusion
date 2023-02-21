@@ -1,5 +1,5 @@
 venv/
 datasets/
-results
+results/
 
 .DS_Store

@@ -3,12 +3,44 @@ import glob
 import shutil
 import random
 import torchvision.datasets as datasets
+from pathlib import Path
+from kaggle import api
 
 
+def get_kaggle_dataset(dataset_path, # Local path to download dataset to
+                dataset_slug, # Dataset slug (ie "zillow/zecon")
+                unzip=True, # Should it unzip after downloading?
+                force=False # Should it overwrite or error if dataset_path exists?
+               ):
+    '''Downloads an existing dataset and metadata from kaggle'''
+    if not force and os.path.exists(dataset_path):
+        return dataset_path
+    api.dataset_metadata(dataset_slug, str(dataset_path))
+    api.dataset_download_files(dataset_slug, str(dataset_path))
+    if unzip:
+        zipped_file = Path(dataset_path)/f"{dataset_slug.split('/')[-1]}.zip"
+        import zipfile
+        with zipfile.ZipFile(zipped_file, 'r') as zip_ref:
+            zip_ref.extractall(Path(dataset_path+'/landscape'))
+        zipped_file.unlink()
 
-# load celebA dataset   
 
-celebA = datasets.CelebA('./datasets/', split='all', download=True)
+def cifar10_loader():
+    cifar10 = datasets.CIFAR10('./datasets/', download=True)
+    return cifar10
+
+def stanfordcars_loader():
+    stanfordcars = datasets.StanfordCars('./datasets/', download=True)
+    return stanfordcars
+
+def celeba_loader():
+    celebA = datasets.CelebA('./datasets/', split='all', download=True)
+    return celebA
+
+def landscape_loader():
+    get_kaggle_dataset('./datasets/landscape', 'arnaud58/landscape-pictures', unzip=True, force=False)
+    return 
+
 
 
 def split_dataset(folder, path_train, path_val, path_test, split=(0.8, 0.1, 0.1)):
@@ -43,4 +75,5 @@ def split_dataset(folder, path_train, path_val, path_test, split=(0.8, 0.1, 0.1)
 
 
 if __name__ == '__main__':
-    split_dataset('./datasets/celeba/img_align_celeba', './datasets/celeba/train', './datasets/celeba/val', './datasets/celeba/test')
+    landscape_loader()
+    split_dataset('./datasets/landscape/landscape', './datasets/landscape/train', './datasets/landscape/val', './datasets/landscape/test')
