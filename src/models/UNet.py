@@ -161,3 +161,59 @@ class UNet(nn.Module):
 
         return x
 
+
+
+class UNet_small:
+
+    def __init__(self, c_in=3, c_out=3, emb_dim=128, device='cuda'):
+        super().__init__()
+        self.device = device
+        self.emb_dim = emb_dim
+        self.input = Block(c_in, 32)
+        self.down1 = DownBlock(32, 64)
+        self.self_attn1 = SelfAttention(64)
+        self.down2 = DownBlock(64, 128)
+        self.self_attn2 = SelfAttention(128)
+        # add //2 if bilinear upsampling
+        self.down3 = DownBlock(128, 256//2)
+        self.self_attn3 = SelfAttention(256//2)
+        self.up1 = UpBlock(256, 128//2)
+        self.self_attn4 = SelfAttention(128//2)
+        self.up2 = UpBlock(128, 64)
+        self.self_attn5 = SelfAttention(64)
+        self.up3 = UpBlock(64, 32)
+        self.self_attn6 = SelfAttention(32)
+        self.output = nn.Conv2d(32, c_out, kernel_size=1)
+
+    def pos_encoding(self, emb, channels):
+        inv_freq = 1.0 / (
+            10000
+            ** (torch.arange(0, channels, 2, device=self.device).float() / channels)
+        )
+        pos_enc_a = torch.sin(emb.repeat(1, channels // 2) * inv_freq)
+        pos_enc_b = torch.cos(emb.repeat(1, channels // 2) * inv_freq)
+        pos_enc = torch.cat([pos_enc_a, pos_enc_b], dim=-1)
+        return pos_enc
+
+    def forward(self, x, emb):
+
+        emb = emb.unsqueeze(-1)
+        emb = self.pos_encoding(emb, self.emb_dim)
+
+        x1 = self.input(x)
+        x2 = self.down1(x1, emb)
+        x2 = self.self_attn1(x2)
+        x3 = self.down2(x2, emb)
+        x3 = self.self_attn2(x3)
+        x4 = self.down3(x3, emb)
+        x4 = self.self_attn3(x4)
+
+        x = self.up1(x4, x3, emb)
+        x = self.self_attn4(x)
+        x = self.up2(x, x2, emb)
+        x = self.self_attn5(x)
+        x = self.up3(x, x1, emb)
+        x = self.self_attn6(x)
+        x = self.output(x)
+
+        return x
