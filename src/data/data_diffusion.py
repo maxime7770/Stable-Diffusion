@@ -4,7 +4,7 @@ import shutil
 import random
 import torchvision.datasets as datasets
 from pathlib import Path
-from kaggle import api
+from PIL import Image
 
 
 def get_kaggle_dataset(dataset_path, # Local path to download dataset to
@@ -13,6 +13,7 @@ def get_kaggle_dataset(dataset_path, # Local path to download dataset to
                 force=False # Should it overwrite or error if dataset_path exists?
                ):
     '''Downloads an existing dataset and metadata from kaggle'''
+    from kaggle import api
     if not force and os.path.exists(dataset_path):
         return dataset_path
     api.dataset_metadata(dataset_slug, str(dataset_path))
@@ -52,6 +53,13 @@ def split_dataset(folder, path_train, path_val, path_test, split=(0.8, 0.1, 0.1)
 
     # get all image paths
     image_paths = glob.glob(os.path.join(folder, '*.jpg'))
+
+    # transform grey images to rgb
+    for image_path in image_paths:
+        image = Image.open(image_path)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            image.save(image_path)
 
     # shuffle image paths
     random.shuffle(image_paths)

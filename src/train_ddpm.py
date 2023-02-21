@@ -40,13 +40,13 @@ if __name__ == '__main__':
     os.makedirs('./results/images', exist_ok=True)
     os.makedirs('./results/models', exist_ok=True)
     img_size = 32
-    batch_size = 4
+    batch_size = 8
     num_workers = 1
-    dataset_path = 'datasets/celeba'
+    dataset_path = 'datasets/landscape'
     train_folder = 'train'
     val_folder = 'val'
-    slice_size = 10
-    epochs = 100
+    slice_size = 1
+    epochs = 500
     lr = 1e-4
     save_path = 'results'
     device = 'cuda'
