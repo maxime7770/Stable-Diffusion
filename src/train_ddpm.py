@@ -27,12 +27,13 @@ def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_fol
             loss.backward()
             optimizer.step()
 
-        print('Sample images')
-        sampled_images = diffusion.sample(model, images.shape[0])
-        print('Save images')
-        save_images(sampled_images, os.path.join(save_path+'/images', f"epoch_{epoch}.png"))
-        print('Save model')
-        torch.save(model.state_dict(), os.path.join(save_path+'/models', f"model_{epoch}.pt"))
+        if epoch % 10 == 0:
+            print('Sample images')
+            sampled_images = diffusion.sample(model, images.shape[0])
+            print('Save images')
+            save_images(sampled_images, os.path.join(save_path+'/images', f"epoch_{epoch}.png"))
+            print('Save model')
+            torch.save(model.state_dict(), os.path.join(save_path+'/models', f"model_{epoch}.pt"))
 
 
 
