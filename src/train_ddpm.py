@@ -10,7 +10,7 @@ from utils import get_data, save_images
 
 def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size, epochs, lr, save_path, device):
     data_loader, _ = get_data(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size)
-    model = UNet_small(device=device).to(device)
+    model = UNet(device=device).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.MSELoss()
     diffusion = Diffusion(img_size=img_size, device=device)
@@ -27,7 +27,7 @@ def train(img_size, batch_size, num_workers, dataset_path, train_folder, val_fol
             loss.backward()
             optimizer.step()
 
-        if epoch % 10 == 0:
+        if epoch % 20 == 0:
             print('Sample images')
             sampled_images = diffusion.sample(model, images.shape[0])
             print('Save images')
