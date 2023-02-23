@@ -43,10 +43,10 @@ if __name__ == '__main__':
     img_size = 48
     batch_size = 8
     num_workers = 2
-    dataset_path = 'datasets/landscape'
+    dataset_path = 'datasets/celeba'
     train_folder = 'train'
     val_folder = 'val'
-    slice_size = 1
+    slice_size = 40
     epochs = 500
     lr = 1e-4
     save_path = 'results'

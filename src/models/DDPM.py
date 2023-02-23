@@ -36,14 +36,14 @@ class Diffusion:
         model.eval()
         with torch.no_grad():
             x = torch.randn((batch_size, 3, self.img_size, self.img_size)).to(self.device)
-            for i in tqdm(reversed(range(self.noise_steps)), position=0):
+            for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
                 time_steps = (torch.ones(batch_size, dtype=torch.long) * i).to(self.device)
                 predicted_noise = model(x, time_steps)
                 alpha = self.alpha[time_steps][:, None, None, None]
                 alpha_hat = self.alpha_hat[time_steps][:, None, None, None]
                 beta = self.beta[time_steps][:, None, None, None]
                 noise = torch.randn_like(x) if i > 1 else torch.zeros_like(x)   # no noise at the end of the reversed diffusion process
-            x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
+                x = 1 / torch.sqrt(alpha) * (x - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * predicted_noise) + torch.sqrt(beta) * noise
         model.train()
         x = (x.clamp(-1, 1) + 1) / 2   # normalize to [0, 1]
         x = (x * 255).type(torch.uint8)

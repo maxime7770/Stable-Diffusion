@@ -66,3 +66,29 @@ def get_data(img_size, batch_size, num_workers, dataset_path, train_folder, val_
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     val_dataset = DataLoader(val_dataset, batch_size=2*batch_size, shuffle=False, num_workers=num_workers)
     return train_dataloader, val_dataset
+
+
+
+def get_data_vae(img_size, batch_size, num_workers, dataset_path, train_folder, val_folder, slice_size):
+    train_transforms = torchvision.transforms.Compose([
+        T.Resize((img_size, img_size)), 
+        T.ToTensor(),
+        T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
+
+    val_transforms = torchvision.transforms.Compose([
+        T.Resize((img_size,  img_size)),
+        T.ToTensor(),
+        T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
+
+    train_dataset = CustomDataset(os.path.join(dataset_path, train_folder), transform=train_transforms)
+    val_dataset = CustomDataset(os.path.join(dataset_path, val_folder), transform=val_transforms)
+    
+    if slice_size > 1:
+        train_dataset = torch.utils.data.Subset(train_dataset, indices=range(0, len(train_dataset), slice_size))
+        val_dataset = torch.utils.data.Subset(val_dataset, indices=range(0, len(val_dataset), slice_size))
+
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_dataset = DataLoader(val_dataset, batch_size=2*batch_size, shuffle=False, num_workers=num_workers)
+    return train_dataloader, val_dataset
