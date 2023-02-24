@@ -1,2 +1,5 @@
-# Stable-Diffusion
+# Stable Diffusion
+
 Stable Diffusion from scratch
+
+
